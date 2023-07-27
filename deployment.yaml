@@ -1,0 +1,136 @@
+# # Service
+
+# apiVersion : v1
+# kind: Service
+
+# metadata:
+#   name: new-service
+
+# spec:
+#   selector:
+#    app: node-app
+#   ports:
+#     - protocol : TCP
+#       port : 3000
+#       targetPort : 3000
+#   type: LoadBalancer 
+
+# ---
+
+# apiVersion: apps/v1
+# kind: Deployment
+
+# metadata:
+#   name: node-app
+
+# spec:
+#   selector:
+#    matchLabels:
+#     app: node-app
+  
+#   template:
+#    metadata:
+#     labels:
+#      app: node-app
+   
+#    spec:
+#     containers:
+#      - name: new-app
+#        image: haariskhatri/datademo:2
+#        volumeMounts:
+#          - mountPath: /app/story
+#            name: new-volume
+#     volumes:
+#       - name: new-volume
+#         hostPath:
+#           path: /data 
+#           type: DirectoryOrCreate
+       
+       
+# Testing Persistent Volume with Hostpath
+
+apiVersion: v1
+kind: PersistentVolume
+
+metadata:
+  name: host-pv
+  
+spec:
+  capacity:
+   storage: 2Gi
+  volumeMode: Filesystem
+  accessModes:
+   - ReadOnlyMany
+   - ReadWriteOnce
+   - ReadWriteMany
+  hostPath:
+   path: /data
+   type: DirectoryOrCreate
+
+---
+# PersistentVolumeClaim
+
+apiVersion: v1 
+kind: PersistentVolumeClaim 
+
+metadata:
+  name: pv-claim
+  
+spec:
+  volumeName: host-pv
+  accessModes:
+   - ReadWriteOnce
+  storageClassName: standard
+  resources:
+    requests:
+      storage: 1Gi
+      
+--- 
+# # Service
+
+apiVersion : v1
+kind: Service
+
+metadata:
+  name: new-service
+
+spec:
+  selector:
+   app: node-app
+  ports:
+    - protocol : TCP
+      port : 3000
+      targetPort : 3000
+  type: LoadBalancer 
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: node-app
+
+spec:
+  selector:
+   matchLabels:
+    app: node-app
+  
+  template:
+   metadata:
+    labels:
+     app: node-app
+   
+   spec:
+    containers:
+     - name: new-app
+       image: haariskhatri/datademo:2
+       volumeMounts:
+         - mountPath: /app/story
+           name: new-volume
+    volumes:
+      - name: new-volume
+        persistentVolumeClaim:
+          claimName: pv-claim
+
+   
